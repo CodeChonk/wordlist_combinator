@@ -3,15 +3,3 @@ This is a Bash implementation of what I only discovered after writing already ex
 This script combines words from an arbitrary number of lists into a single list.
 
 There isn't an arbitrary limit of eight lists like combinatorX, but there may be more fundamental restrictions behind it that may also apply to this script.
-
-No testing has been done on this software outside of basic functionality as described.
-
-This code is provided as-is, only to be used in legal cicrumstances. 
-
-I don't know how one could do it, but any damages or any consequences at all to speak of are the sole responsibility of the user.
-
-I claim no responsibility for the use of this program.
-
-This code is provided for educational purposes only.
-
-This code is provided open source. Copy and modify it as you wish.
