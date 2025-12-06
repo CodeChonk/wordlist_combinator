@@ -1,72 +1,51 @@
 #!/bin/bash
 
-#combiner 0 ${#inputarray[@]} $ARG_OUTPUT ""
-function combiner() {
+# preset variables
+ARG_OUTPUT=/dev/stdout
+declare -a inputarray
+outputsize=1
+outputwords=1
+
+#recursive function puts together and outputs combined words
+function combinator() {
+  #I suppose the first two variables are unneccesary, the third is because I couldn't seem to put that in a conditional statement correctly
   local comb_array_pos=$1
-  local comb_array_length=$2
-  local comb_output_path=$3
-  local comb_output_string=$4
-
-  echo "local comb_array_pos : $comb_array_pos"
-  echo "local comb_array_length : $comb_array_length"
-  echo "local comb_output_path : $comb_output_path"
-  echo "local comb_output_string : $comb_output_string"
-  echo ""
-
-  echo " ${inputarray[comb_array_pos]}"
-  #$(cat ${inputarray[comb_array_pos]})
-
-  for line in $(cat ${inputarray[comb_array_pos]}); do
-    echo "$line"
-    #echo '$comb_array_pos" == "$comb_array_length'
-    #echo "$("$comb_array_pos" == "$comb_array_length")"
-echo 'if [[ "$comb_array_pos" == "$comb_array_length" ]]'
-echo "if [[ "$comb_array_pos" == "$comb_array_length" ]]"
-echo " $(("$comb_array_pos" == "$comb_array_length" | echo ))"
-echo "$(( 1 == 1 ))"
-
-echo "$(($comb_array_pos == $comb_array_length))"
-
-    if [[ "$comb_array_pos" -eq "$comb_array_length" ]];then 
-      echo "IF TRUE"      
-      local output="${comb_output_string}${line}"
-      echo   "${comb_output_string}${line}"
-      echo "$output"
-      echo "$output" >> $comb_output_path
+  local comb_output_string=$2
+  local islastlist=$(("$comb_array_pos" == "$inputarraylessone"))
+  
+  #for each item in the list in the array at that position, add it to the output string and output it if it's the correct position
+  for line in $(cat ${inputarray[$comb_array_pos]}); do
+    if [[ $islastlist -eq 1 ]];then      
+      local output="${comb_output_string}${line}"  
+      echo "$output" >> $ARG_OUTPUT
     else
-      echo "IF FALSE"
       local next_array_pos=$((comb_array_pos+1))
-      echo "next array pos : $next_array_pos"
-      echo combiner next_array_pos: $next_array_pos comb_inputlists_length: $comb_inputlists_length output_path: $output_path comb_output_stringline :$comb_output_string$line
-
-      combiner $next_array_pos $comb_inputlists_length $output_path $comb_output_string$line
+      combinator $next_array_pos $comb_output_string$line
     fi
-
   done
 }
 
-
-
-#handles option flags
-
-while getopts "o:hv" opt; do
+#options handler
+while getopts "ohv" opt; do
   case $opt in
     o) #output:
-      ARG_OUTPUT=$OPTARG
+      ARG_OUTPUT=$2
+      shift $((OPTIND-1))
       ;;
-    v) #version
-      echo -e "Wordlist-Combinator v1.0 \n\nCodeChonk"
-      exit 0
+    v) #verbose
+      verbose=1
       ;;
     h) #help
-      echo "wordlist-combinator.sh [-o output] ListOne ListTwo ... "
+      echo "wordlist-combinator.sh [-o output.file] [-v] list-one list-two ... "
+      echo ""
       echo "-h: Help Info"
-      echo "-v: Version"
+      echo "-v: verbose. I only recommend using if used with -o. Would otherwise interfere with downstream piped commands"
+      echo "-o: output to file. Must be the first argument to function correctly."
+      echo -e "\n\nWordlist Combinator v1.1 -- CodeChonk 2025"
       exit 0
       ;;
     \?)
-      
-      echo "Usage: wordlist-combinator.sh [-o output] ListOne ListTwo ..."
+      echo "-h for help"
       echo "Invalid option: -$OPTARG" >&2
       exit 1
       ;;
@@ -76,95 +55,32 @@ while getopts "o:hv" opt; do
       ;;
   esac
 done
-
 shift $((OPTIND-1))
 
-#Gives information and simulates loading times
-echo -e "--Program Start--\n"
-sleep 0.5s
-echo "Combinating The Following Lists: $*"
-sleep 0.7s
-echo "initializing wordlist array"
-sleep 0.5s
-
-declare -a inputarray
-outputsize=1
-outputwords=1
-
-# checks inputs for validity, displays information about given lists
+# checks inputs for validity, displays information about given lists if verbose flag is set and creates input array list
 for i in $*; do
 	if [ -f "$i" ]; then
-		echo -e "\n$i exists, adding to combinator"
+		
+    if [[ "$verbose" ]];then 
+      echo -e "\n$i exists, adding to combinator" 
+    fi
 		inputarray+=($i)
-		echo "words:  $(wc -l $i | cut -d ' ' -f 1)"
-		echo "bytes: $(wc -c $i | cut -d ' ' -f 1)"
+		if [[ "$verbose" ]];then 
+      echo "words:  $(wc -l $i | cut -d ' ' -f 1)"
+    fi
+    if [[ "$verbose" ]];then 
+      echo "bytes: $(wc -c $i | cut -d ' ' -f 1)"
+    fi
 		outputwords=$((($outputwords * $(wc -l $i | cut -d ' ' -f 1))))
     outputsize=$((($outputsize * $(wc -c $i | cut -d ' ' -f 1))))
 	else
 		echo "$i does not exist, aborting"  && exit 1
 	fi
-done 
+done
 
-# Prints information while emulating processing time
-echo -e "\nNumber of input lists: ${#inputarray[@]}"
-sleep 0.5s
-echo "List of input lists: ${inputarray[@]}"
-sleep 0.8s
-echo "Output to: $ARG_OUTPUT"
-sleep 0.2s
+inputarraylessone=$((${#inputarray[@]}-1))
 
-echo -e "\nOutput Word Count: $outputwords words"
-echo -e "\nEstimated output size: $outputsize bytes"
-
-sleep 1s
-
-#was formerly using a different recursive implementation. Don't feel like rewriting it more thoroughly than necessary
-#processor 0   "" ${inputarray[@]}
-
-#function processor() {
-array_pos=0
-array_length=${#inputarray[@]}
-output_path=$ARG_OUTPUT
-output_string=""
-
-echo "array_pos : $array_pos"
-echo "array_length : $array_length"
-echo "output_path : $output_path"
-echo "output_string : $output_string"
-
-arraysetnumber=0
-adjarraysetnumber=0
-declare -a listsarray
-adjinputarraylength=$((${#inputarray[@]}+3))
-
- echo "arraysetnumber : $arraysetnumber"
- echo "adjarraysetnumber : $adjarraysetnumber"
- echo "declare : $declare"
- echo "adjinputarraylength : $adjinputarraylength"
- echo ""
-echo " ${inputarray[@]}"
-
-#copies argument array and trims it into an array of supplied lists
-# for i in ${inputarray[@]}; do
-#   if [[ $arraysetnumber -ge 3 ]];then
-#     adjarraysetnumber=$(("$arraysetnumber"-3))
-#     listsarray[$adjarraysetnumber]=$i 
-#   fi
-#   arraysetnumber=$(("$arraysetnumber"+1))
-# done
+combinator 0 ""
 
 
-# loop prints array for debugging purposes
-#for ((j=0; j < "${#listsarray[@]}"; j++))do #$adjinputarraylength"
-#  echo "$j : ${listsarray[$j]}"
-#done
-
-comb_inputlists_length=${#inputarray[@]} #$((${#listsarray[@]}-1))
-  echo "comb inputlists length : $comb_inputlists_length"
-# combiner 0 $comb_inputlists_length $ARG_OUTPUT ""
-echo "combiner 0 ${#inputarray[@]} $ARG_OUTPUT """
-combiner 0 ${#inputarray[@]} $ARG_OUTPUT ""
-
-echo ""
-echo "Done"
-exit 0
+  
